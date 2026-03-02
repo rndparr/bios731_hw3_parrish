@@ -226,7 +226,7 @@ optim_method <- function(X, Y, theta0 = c(0, 0), tol = 1e-8, max_iter = 250){
 
 	results <- list(
 		theta = theta, 
-		iter = fit_optim$counts, 
+		iter = fit_optim$counts[['function']], 
 		# optim uses 0 for success, 1 and other vals for error
 		converged = (fit_optim$convergence == 0), 
 		ci = ci,
