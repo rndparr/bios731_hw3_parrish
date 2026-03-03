@@ -8,7 +8,7 @@ func_time <- function(x){
 #################################
 # used by multiple functions
 
-get_ci <- function(theta, H = NULL, invH = NULL, alpha = 0.05){
+get_ci_logistic <- function(theta, H = NULL, invH = NULL, alpha = 0.05){
 
 	# don't invert H unneccessarily
 	if ( is.null(invH) ){
@@ -66,7 +66,7 @@ newton_method <- function(X, Y, theta0 = c(0,0), tol = 1e-8, max_iter = 250){
 	}
 	
 	# get confidence interval
-	ci <- get_ci(theta = theta[iter, ], invH = invH)
+	ci <- get_ci_logistic(theta = theta[iter, ], invH = invH)
 
 	# total time
 	time <- proc.time()[['elapsed']] - time_start
@@ -151,7 +151,7 @@ mm_method <- function(X, Y, theta0 = c(0, 0), tol = 1e-8, max_iter = 250, max_it
 
 	# get confidence interval
 	H <- hess_loglik(theta_k, X)
-	ci <- get_ci(theta = theta_k, H = H)
+	ci <- get_ci_logistic(theta = theta_k, H = H)
 
 	# total time
 	time <- proc.time()[['elapsed']] - time_start
@@ -218,8 +218,8 @@ optim_method <- function(X, Y, theta0 = c(0, 0), tol = 1e-8, max_iter = 250){
 
 	theta <- setNames(fit_optim$par, c('beta0', 'beta1'))
 
-	# optim returns negative hessian, must be neg before passed to get_ci
-	ci <- get_ci(theta = theta, H = - fit_optim$hessian)
+	# optim returns negative hessian, must be neg before passed to get_ci_logistic
+	ci <- get_ci_logistic(theta = theta, H = - fit_optim$hessian)
 
 	# total time
 	time <- proc.time()[['elapsed']] - time_start

@@ -1,0 +1,551 @@
+---
+title: "BIOS 731: HW3"
+author: "Randy Parrish"
+date: "`r Sys.Date()`"
+format:
+  pdf:
+    colorlinks: true
+    urlcolor: blue
+output:
+  pdf_document:
+    includes:
+      in_header: "preamble.tex"
+execute:
+  echo: true
+  warning: false
+  message: false  
+---
+
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  #echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 6,
+  fig.height = 5,
+  fig.path = '../results/',
+  fig.pos = 'H', 
+  fig.align = 'center',
+  out.extra = ''#,
+  #fig.cap = '',
+  # cache = FALSE
+)
+
+# libraries
+library(here)
+library(kableExtra) # make tables
+library(ggplot2)
+
+
+# set plot theme to use for all plots
+plot_theme <- theme_bw() + 
+	theme(legend.position='bottom',
+		legend.margin=margin(0, 0, 0, 0))
+theme_set(plot_theme)
+
+
+# function to make the table from a data frame
+report_table <- function(data, 
+  w = NULL, h = '300px', ec = 'margin: 15px;', 
+  rownames = FALSE, header = NULL, ...)
+{
+
+  # create table object
+  tbl <- kbl(data, 
+    row.names = rownames,
+    booktabs=TRUE,
+    ...)
+
+  # add header_above
+  if (!is.null(header)) {
+    tbl <- add_header_above(tbl, header=header, escape=FALSE)
+  } 
+
+  # create the pdf table
+  tbl <- kable_paper(
+    kable_styling(tbl, 
+      position = 'center',
+      fixed_thead = T,
+      latex_options = c('striped', 'hold_position','scale_down'))
+  )
+
+  # return the table
+  tbl
+}
+
+```
+
+
+---
+
+## Problem 0
+
+GitHub Repo: [https://github.com/rndparr/bios731_hw3_parrish](https://github.com/rndparr/bios731_hw3_parrish)
+
+---
+
+## Problem 1: Newton's method
+
+
+- Derive likelihood, gradient, and Hessian for logistic regression for an arbitrary number of predictors $p$
+
+
+Let $\vtheta$ be a $p\times 1$ vector of parameters.
+
+$$\begin{aligned}
+	% f(Y_i; \)
+%	f(y_i, \beta_0, \vbeta, \vX_i) &= %
+	\pi_i &= \logit\inv(\vX_i^T\vtheta) 
+		= \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta ]} \\
+		= \frac{1}{1+\exp[-(\vX_i^T\vtheta)]} \\
+	\mathcal{L}(\pi_i) &= \prod_{i=1}^n \pi_i^{Y_i}(1-\pi_i)^{1-Y_i} \\
+	%		&= prod_{i=1}^n \frac{1}{1+\exp[-\beta_0+\vbeta^T\vX_i]} \\
+	l(\pi_i) &= \sum_{i=1}^n Y_i\log(\pi_i) + (1-Y_i)\log(1-\pi_i) \\
+		&= \sum_{i=1}^n Y_i\lrb{\log(\pi_i) - \log(1-\pi_i)} + \log(1-\pi_i) \\
+		&= \sum_{i=1}^n Y_i\log\!\lrp{\frac{\pi_i}{1-\pi_i}} + \log(1-\pi_i) \\	
+		&= \sum_{i=1}^n Y_i\logit(\pi_i) + \log(1-\pi_i) \\
+	%	&= \sum_{i=1}^n Y_i\lrp{\beta_0+\vbeta^T\vX_i} + \log(1-\pi_i) \\
+	l(\vtheta)	&= \sum_{i=1}^n Y_i \vX_i^T\vtheta + \log\!\lrp{1-\frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]} } \\
+		&= \sum_{i=1}^n Y_i\vX_i^T\vtheta + \log\!\lrp{\frac{1}{1+\exp[\vX_i^T\vtheta]} } \\
+		&= \sum_{i=1}^n Y_i\vX_i^T\vtheta - \log\!\lrp{1+\exp[\vX_i^T\vtheta]} \\
+\end{aligned}$$ 
+
+
+The gradient is:
+
+$$\begin{aligned}		
+	\nabla l(\vtheta) &= \sum_{i=1}^n \lrp{Y_i - \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]}} \vX_i	\\
+	\nabla l(\pi_i) &= \sum_{i=1}^n (Y_i - \pi_i)\vX_i	\\
+	% \nabla l(\vtheta ) &= 	\pmat{\sum_{i=1}^n Y_i - \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]} \\ \sum_{i=1}^n Y_i\vX_i -   \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]}\vX_i } 
+	% 	= 	\pmat{\sum_{i=1}^n Y_i - \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]} \\ \sum_{i=1}^n \lrp{ Y_i -   \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]}} \vX_i } \\
+	% 	&= \sum_{i=1}^n \lrp{Y_i - \frac{\exp[\vX_i^T\vtheta]}{1+\exp[\vX_i^T\vtheta]}}	\pmat{1 \\ \vX_i } \\
+	% \nabla l(\pi_i) %&= \pmat{\sum_{i=1}^n Y_i - \pi_i \\ \sum_{i=1}^n Y_i\vX_i -   \pi_i \vX_i } \\
+	% 	&= \pmat{\sum_{i=1}^n Y_i - \pi_i \\ \sum_{i=1}^n (Y_i-\pi_i)\vX_i } 
+	% 	= \sum_{i=1}^n (Y_i - \pi_i)\pmat{1 \\ \vX_i }
+\end{aligned}$$
+
+
+
+
+The Hessian is:
+
+$$\begin{aligned}	
+\nabla^2 l(\vtheta) &=  - \sum_{i=1}^n \frac{\exp[\vX_i^T\vtheta]}{\lrbr{1+\exp[\vX_i^T\vtheta]}^2}  \vX_i\vX_i^T \\
+\nabla^2 l(\pi_i) &=  - \sum_{i=1}^n \pi_i(1-\pi_i)  \vX_i\vX_i^T \\
+\end{aligned}$$
+
+
+
+- What is the Newton's method update for $\beta$ for logistic regression?
+
+
+$$\begin{aligned}			
+	\vtheta^{(k+1)} &= \vtheta^{(k)} - \lrb{\nabla^2 l(\vtheta^{(k)}) }\inv \nabla l(\vtheta^{(k)})
+\end{aligned}$$
+
+
+
+- Is logistic regression a convex optimization problem? Why or why not?
+
+Yes; the goal is to find a global optimum that minimizes the differentiable convex function $l(\vtheta)$. 
+
+---
+
+
+## Problem 2: MM
+
+(A) 
+In constructing a minorizing function, first prove the inequality
+
+$$-\log\{1 + \exp{x_i^T\theta}\} \ge -\log\{1 + \exp(X_i^T\theta^{(k)})\} - \frac{\exp(X_i^T\theta) - \exp(X_i^T\theta^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}$$
+with equality when $\theta = \theta^{(k)}$. This eliminates the log terms.
+
+**Answer:**
+
+When $\theta = \theta^{(k)}$, the second term on the right hand side becomes 0, hence equality. 
+
+If $f(y)$ is convex and differentiable, then $f(y)\geq f(x)+f'(x)(y-x)$. The function $-\log\!\lrbr{x}$ is convex and its derivative is $-\frac{1}{x}$. Then
+
+$$\begin{aligned}	
+	-\log\!\lrbr{1+\exp(\vX_i^T\vtheta)} &\geq -\log\!\lrbr{1+\exp(\vX_i^T\vtheta^{(k)})} -\frac{1}{1+\exp(\vX_i^T\vtheta^{(k)})}\lrbr{\lrb{1+\exp(\vX_i^T\vtheta)} - \lrb{1+\exp(\vX_i^T\vtheta^{(k)}) } } \\
+		&= -\log\!\lrbr{1+\exp(\vX_i^T\vtheta^{(k)})} -  \frac{  \exp\!\lrp{\vX_i^T\vtheta} -  \exp(\vX_i^T\vtheta^{(k)})  }{1+\exp(\vX_i^T\vtheta^{(k)}) }		
+	% -\log\!\lrbr{1+\exp\!\lrp{\vX_i^T\vtheta}} &\geq -\log\!\lrbr{1+\exp\!\lrp{\vX_i^T\vtheta^{(k)}}} -\frac{1}{1+\exp\!\lrp{\vX_i^T\vtheta^{(k)}}}\lrbr{\lrb{1+\exp\!\lrp{\vX_i^T\vtheta}} - \lrb{1+\exp\!\lrp{\vX_i^T\vtheta^{(k)}} } } \\
+	% 	&= -\log\!\lrbr{1+\exp\!\lrp{\vX_i^T\vtheta^{(k)}}} -  \frac{  \exp\!\lrp{\vX_i^T\vtheta} -  \exp\!\lrp{\vX_i^T\vtheta^{(k)}}  }{1+\exp\!\lrp{\vX_i^T\vtheta^{(k)}} }
+\end{aligned}$$
+
+
+
+<br>
+
+(B) Now apply the arithmetic-geometric mean inequality to the exponential function $\exp(X_i^T\theta)$ to separate the parameters. Assuming that $\theta$ has $p$ components and that there are $n$ observations, show that these maneuvers lead to a minorizing function
+
+$$g(\theta|\theta^{(k)}) = -\frac{1}{p}\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}\sum_{j = 1}^p\exp\{pX_{ij}(\theta_j-\theta_j^{(k)})\} + \sum_{i = 1}^nY_iX_i^T\theta = 0$$
+
+
+
+**Answer:**
+
+
+First,
+
+$$\begin{aligned}	
+	\exp\!\lrbr{\vX_i^T\vtheta} &= \exp\!\lrbr{\vX_i^T\vtheta^{(k)}} \exp\!\lrbr{\vX_i^T(\vtheta-\vtheta^{(k)})} = \exp\!\lrbr{\vX_i^T\vtheta^{(k)}} \prod_{j=1}^p \exp\!\lrbr{X_{ij}^T(\theta_j-\theta^{(k)}_j)} \\
+\end{aligned}$$
+
+Next, using the arithmetic-geometric mean inequality,
+
+$$\begin{aligned}	
+	\prod_{j=1}^p \exp\!\lrbr{X_{ij}^T(\theta_j-\theta^{(k)}_j)} &= \prod_{j=1}^p \exp\!\lrbr{p X_{ij}^T(\theta_j-\theta^{(k)}_j)}^{\frac{1}{p}} \leq \frac{1}{p} \sum_{j=1}^p \exp\!\lrbr{ pX_{ij}^T(\theta_j-\theta^{(k)}_j) } \\
+% \exp\!\lrbr{\vX_i^T\vtheta^{(k)}} \prod_{j=1}^p \exp\!\lrbr{X_{ij}^T(\theta_j-\theta^{(k)}_j)} &= \exp\!\lrbr{\vX_i^T\vtheta^{(k)}}\prod_{j=1}^p \exp\!\lrbr{p X_{ij}^T(\theta_j-\theta^{(k)}_j)}^{\frac{1}{p}} \\
+%\exp\!\lrbr{\vX_i^T\vtheta}	&\leq \exp\!\lrbr{\vX_i^T\vtheta^{(k)}}\frac{1}{p} \sum_{j=1}^p \exp\!\lrbr{ pX_{ij}^T(\theta_j-\theta^{(k)}_j) } \\
+%	\prod_{j=1}^p \exp\!\lrbr{ X_{ij}^T(\theta_j-\theta^{(k)}_j) }^p &= \exp\!\lrbr{ p\sum_{j=1}^p X_{ij}^T(\theta_j-\theta^{(k)}_j)} \leq \frac{1}{p} \sum_{j=1}^p X_{ij}^T(\theta_j-\theta^{(k)}_j)
+\end{aligned}$$
+
+
+Then
+$$\begin{aligned}	
+	\exp\!\lrbr{\vX_i^T\vtheta}	&\leq \exp\!\lrbr{\vX_i^T\vtheta^{(k)}}\frac{1}{p} \sum_{j=1}^p \exp\!\lrbr{ pX_{ij}^T(\theta_j-\theta^{(k)}_j) } \\
+\end{aligned}$$
+
+
+And $g(\vtheta|\vtheta^{(k)})$ is obtained by substituting the previous inequalities and the log likelihood from Problem 1. 
+
+
+
+
+(C) Finally, prove that maximizing $g(\theta|\theta^{(k)})$ consists of solving the equation
+
+$$ -\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)})X_{ij}\exp(-pX_{ij}\theta_j^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}\exp(pX_{ij}\theta_j) + \sum_{i = 1}^nY_iX_{ij} = 0$$
+
+for each $j$.
+
+
+
+**Answer:**
+
+Maximize $g(\vtheta|\vtheta^{(k)})$ by setting its derivative equal to 0 and solving.
+
+$$\begin{aligned}	
+	\nabla g(\vtheta|\vtheta^{(k)}) &= \frac{\partial g(\vtheta|\vtheta^{(k)})}{\theta_j} \\
+		&= \frac{\partial }{\theta_j} \lrp{-\frac{1}{p}\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}\sum_{j = 1}^p\exp\{pX_{ij}(\theta_j-\theta_j^{(k)})\} + \sum_{i = 1}^nY_iX_i^T\theta }\\
+		&= \frac{\partial }{\theta_j} \lrp{-\frac{1}{p}\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}\sum_{j = 1}^p\exp\{pX_{ij}\theta_j\}\exp\{-pX_{ij}\theta_j^{(k)}\} + \sum_{i = 1}^nY_iX_i^T\theta }\\
+		&= -\frac{1}{p}\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)})}{1 + \exp(X_i^T\theta^{(k)})}pX_{ij}\exp\{pX_{ij}\theta_j\}\exp\{-pX_{ij}\theta_j^{(k)}\} + \sum_{i = 1}^n Y_iX_{ij} \\
+		&= -\sum_{i = 1}^n \frac{\exp(X_i^T\theta^{(k)}) X_{ij} \exp\{-pX_{ij}\theta_j^{(k)}\} }{1 + \exp(X_i^T\theta^{(k)})}\exp\{pX_{ij}\theta_j\} + \sum_{i = 1}^n Y_iX_{ij} \\
+		&= -\sum_{i = 1}^n \pi^{(k)} X_{ij} \exp\{-pX_{ij}\theta_j^{(k)}\} \exp\{pX_{ij}\theta_j\} + \sum_{i = 1}^n Y_iX_{ij} \\
+\end{aligned}$$
+
+
+---
+
+### Problem 3: simulation
+
+Next we will implement logistic regression in R four different ways and compare the results using a short simulation study.
+
+
+- implement using Newton's method from 1.1 in R
+- implement using MM from 1.2 in R
+- implement using `glm()` in R
+- implement using `optim()` in R:
+  - Use the option `method = "BFGS"`, which implements a Quasi-Newton approach
+
+
+
+Simulation study specification:
+
+- simulate from the model $logit(P(Y_i = 1|X_i)) = \beta_0 + \beta_1X_i$
+  - $\beta_0 = 1$
+  - $\beta_1 = 0.3$
+  - $X_i \sim N(0, 1)$
+  - $n = 200$
+  - $nsim = 1$
+- For your implementation of MM and Newton's method, select your own starting value and stopping criterion, but make sure they are the same for the two algorithms
+
+
+You only need to run the simulation using **one simulated dataset**.  For each of the four methods, report:  
+
+  - $\hat{\beta}_0$, $\hat{\beta}_1$
+  - 95% confidence intervals for $\hat{\beta}_0$, $\hat{\beta}_1$
+  - computation time
+  - number of iterations to convergence
+
+
+Make 2-3 plots or tables comparing your results, and summarize these findings in one paragraph.
+
+**Answer:**
+
+
+```{r, sim_data_methods}
+
+# set seed
+set.seed(03042026)
+
+# load source files
+source(here('source', 'logistic.R'))
+source(here('source', 'logistic_simulate_data.R'))
+source(here('source', 'logistic_methods.R'))
+
+# simulate data
+dat <- sim_data(beta0 = 1, beta1 = 0.3, n = 200)
+attach(dat)
+
+# run all methods
+newton_res <- newton_method(X, Y)
+mm_res <- mm_method(X, Y)
+glm_res <- glm_method(X, Y)
+optim_res <- optim_method(X, Y)
+
+```
+
+
+```{r, results, echo = FALSE}
+method_names <- c('Newton', 'MM', 'GLM', 'Optim')
+
+# vector of thetas
+thetas <- rbind(
+	newton_res$theta, 
+	mm_res$theta,
+	glm_res$theta,
+	optim_res$theta)
+rownames(thetas) <- method_names
+
+# dataframe of CIs for beta0
+ci_beta0 <- as.data.frame(rbind(
+	newton_res$ci['beta0',], 
+	mm_res$ci['beta0',],
+	glm_res$ci['beta0',],
+	optim_res$ci['beta0',]))
+ci_beta0$method <- method_names
+ci_beta0$var <- 'beta0'
+
+# dataframe of CIs for beta1
+ci_beta1 <- as.data.frame(rbind(
+	newton_res$ci['beta1',], 
+	mm_res$ci['beta1',],
+	glm_res$ci['beta1',],
+	optim_res$ci['beta1',]))
+ci_beta1$method <- method_names
+ci_beta1$var <- 'beta1'
+
+# iterations
+iterations <- setNames(c(
+	newton_res$iter, 
+	mm_res$iter,
+	glm_res$iter,
+	optim_res$iter
+	), method_names)
+
+# convergence
+convergence <- setNames(c(
+	newton_res$converged, 
+	mm_res$converged,
+	glm_res$converged,
+	optim_res$converged
+	), method_names)
+
+# time elapsed
+time <- setNames(c(
+	newton_res$time, 
+	mm_res$time,
+	glm_res$time,
+	optim_res$time
+	), method_names)
+
+
+# results table
+res_table <- data.frame(method_names, thetas, iterations, time)
+res_table_cols <- c('Method', 
+	'$\\hat{\\beta}_0$', '$\\hat{\\beta}_1$', 
+	'Iterations', 'Time (sec)')
+
+report_table(
+	setNames(res_table, res_table_cols), 
+	digits = 10, escape = FALSE)
+
+```
+
+
+```{r, time_plot, fig.height = 4, echo = FALSE}
+# plot time vs iterations
+p1 <- ggplot(res_table, 
+			aes(y=time, x=iterations, color=method_names)) + 
+	geom_point(size=3) + 
+	scale_color_manual(
+		name = 'Method', 
+		breaks = method_names,
+		values = c('#F8766D', '#7CAE00', '#00BFC4', '#C77CFF')) +
+		labs(title = 'Plot 1: Time in Seconds vs. Number of Iterations for All Methods',
+			x = 'Iterations',
+			y = 'Time (sec)')
+p1
+```
+
+
+```{r, ci_plot, fig.height = 4, echo = FALSE}
+# CI PLOT
+# thetas dataframe
+thetas <- as.data.frame(thetas)
+thetas$method <- rownames(thetas)
+
+thetas_beta0 <- thetas[,c('method', 'beta0')]
+colnames(thetas_beta0) <- c('method', 'beta')
+thetas_beta0$var <- 'beta0'
+
+thetas_beta1 <- thetas[,c('method', 'beta1')]
+colnames(thetas_beta1) <- c('method', 'beta')
+thetas_beta1$var <- 'beta1'
+
+# final ci_dat
+ci_dat <- merge(rbind(thetas_beta0, thetas_beta1), rbind(ci_beta0, ci_beta1))
+ci_dat$beta_true <- NA
+ci_dat[ci_dat$var == 'beta0', 'beta_true'] <- theta_true[1]
+ci_dat[ci_dat$var == 'beta1', 'beta_true'] <- theta_true[2]
+
+# factor var for better labeling later
+ci_dat$var <- factor(ci_dat$var, 
+	levels = c('beta0', 'beta1'), 
+	labels = c(
+		'hat(beta)[0]',
+		'hat(beta)[1]')
+)
+
+# factor method to get everything in the right order
+ci_dat$method <- factor(ci_dat$method, levels = method_names)
+
+p2 <- ggplot(ci_dat, 
+	aes(x = beta, method,
+		xmin = `2.5 %`, 
+		xmax = `97.5 %`, 
+		col = method)) +
+	geom_vline(aes(xintercept = beta_true), 
+		linetype = 'dotted',
+		size = 0.5) +	
+	geom_pointrange(alpha=0.9, size=0.5) + 
+	scale_color_manual(
+		name = 'Method', 
+		breaks = method_names,
+		values = c('#F8766D', '#7CAE00', '#00BFC4', '#C77CFF')) +
+	labs(title = 'Plot 2: Confidence Intervals',
+		x = bquote(beta),
+		y = '') + 
+	facet_grid(~ var, 
+		labeller = label_parsed)
+p2
+
+
+```
+
+
+
+All methods converged and returned the same values of $\hat{\beta}_0$ and $\hat{\beta}_1$ with only minor rounding differences. Confidence intervals were also nearly identical. All methods slightly overestimated $\beta_0$ and underestimated but were still more accurate for $\beta_1$. The only difference seemed to be the computation time and number of iterations. Newton's method, which inverts the Hessian in every iteration, had few iterations but still took the longest at about a 3rd of a second at 0.352 seconds. Optim was the fastest of methods at 0.006 seconds, followed by GLM and then MM which had a comparable computation time (0.024 and 0.038 seconds, respectively). GLM had the fewest iterations at 4, followed by Newton at 5. MM had the required the greatest number of iterations at 150, followed by Optim which took 31. From the plot, the computation time seemed unrelated to the number of iterations.
+
+
+---
+
+
+## Problem 4: EM algorithm for censored exponential data
+
+This will be a continuation of the lab problem on EM for censored exponential data. Suppose we have survival times $t_1, \ldots, t_n \sim Exponential(\lambda)$. 
+
+* Do not observe all survival times because some are censored at times $c_1, \ldots, c_n$.  
+* Actually observe $y_1, \ldots, y_n$, where $y_i = min(y_0, c_i)$
+  * Also have an indicator $\delta_i$ where $\delta_i = 1$ is $y_i \le c_i$
+    * i.e. $\delta_i = 1$ if not censored and $\delta_i = 0$ if censored
+
+Do the following:
+
+* Derive an EM algorithm to estimate the parameter $\lambda$.  Show your derivation here and report updates for the **E-step** and **M-Step**.
+* Implement your EM in R and fit it to the `veteran` dataset from the `survival` package.  
+  * Report your fitted $\lambda$ value. How did you monitor convergence?
+  * Report a 95% confidence interval for $\lambda$, and explain how it was obtained.
+  * Compare 95% confidence interval and results from those obtained by fitting an accelerated failure time model (AFT) in R with exponential errors.  You can fit an AFT model using the `survreg()` function from the `survival` package.  If you choose `dist = "weibull` and `shape = 1` as parameter arguments, this will provide exponential errors.
+  
+
+**Answer:**
+
+Let $m=\sum_{i=1}^n \delta_i$. Then the complete data likelihood and log-likelihood are:
+
+$$\begin{aligned}	
+% 	\mathcal{L}_C(\lambda|t_1,\ldots,t_n) &= \prod_{i=1}^n f_t(t_i) = \prod_{i=1}^n  \lambda e^{-\lambda t_i} \\
+	% l_C(\lambda|t_1,\ldots,t_n) &= n \log(\lambda) - \lambda \sum_{i=1}^n t_i \\
+	\hat{\lambda} &= \frac{n}{\sum_{i=1}^n t_i} \\
+	Q(\lambda|\lambda^{(k)}) &= \ex{ l_C(\lambda|t_1,\ldots,t_n) | \vec{Y},\lambda^{(k)} } \\
+	%	&= \ex{   n \log(\lambda) - \lambda \lrb{\sum_{i=1}^n \delta_i Y_i + (1-\delta_i)z_i }     | \vec{Y},\lambda^{(k)} } \\
+	%	&= \ex{ n \log(\lambda) - \lambda \lrb{\sum_{i=1}^n \delta_i Y_i + (1-\delta_i)z_i } } \\
+	%	&= n \log(\lambda) - \lambda \lrb{\sum_{i=1}^n \delta_i Y_i + (1-\delta_i)(c_i + \frac{1}{\lambda^{(k)}}) } \\
+		&= n \log(\lambda) - \lambda \lrb{\sum_{i=1}^n \delta_i Y_i + (1-\delta_i)(Y_i + \frac{1}{\lambda^{(k)}}) } \\
+		&= n \log(\lambda) - \lambda \lrb{\sum_{i=1}^n Y_i + \frac{1-\delta_i}{\lambda^{(k)}} } \\
+		&= n \log(\lambda) - \lambda \lrbr{ \frac{n-m}{\lambda^{(k)}} + \sum_{i=1}^n Y_i } \\
+	\frac{\partial Q(\lambda|\lambda^{(k)})}{ \partial \lambda } &= \frac{n}{\lambda}- \frac{n-m}{\lambda^{(k)}}-\sum_{i=1}^n Y_i = 0\\
+	\lambda^{(k+1)} &= \frac{n}{\frac{n-m}{\lambda^{(k)}} + \sum_{i=1}^n Y_i }
+\end{aligned}$$
+
+
+**E-step:** $\frac{n-m}{\lambda^{(k)}} + \sum_{i=1}^n Y_i$
+
+
+**M-step:** $\lambda^{(k+1)} = \frac{n}{\frac{n-m}{\lambda^{(k)}} + \sum_{i=1}^n Y_i }$
+
+
+
+
+```{r, load_data}
+library(survival)
+
+Y <- as.integer(veteran$time)
+delta <- as.integer(veteran$status)
+```
+
+
+
+```{r, em_aft}
+source(here('source', 'em_algorithm.R'))
+
+# E-M algorithm
+em_res <- em_alg(Y, delta, lambda0 = 0.001)
+
+# survival package AFT
+sfit <- survreg(Surv(time, status) ~ 1, dist = 'weibull', data = veteran)
+lambda_aft <- exp(-coef(sfit))
+ci_aft <- rev(exp(-confint(sfit)))
+
+```
+
+
+```{r, em_aft_table, echo = FALSE}
+# results table
+em_aft_table <- as.data.frame(
+	rbind(
+		c(em_res$lambda, em_res$ci),
+		c(lambda_aft, ci_aft)))
+rownames(em_aft_table) <- c('E-M Algorithm', 'AFT Model')
+
+# CI width
+em_aft_table$width <- em_aft_table['97.5 %'] - em_aft_table['2.5 %']
+
+# set column names
+colnames(em_aft_table) <- c('$\\hat{\\lambda}$', 
+	'2.5 \\%', '97.5 \\%',
+	'CI Width')
+
+report_table(em_aft_table, 
+	digits = 6, escape = FALSE, rownames = TRUE)
+
+```
+
+The CI for the E-M algorithm was obtained using $\var{\hat{\lambda}}\approx \frac{\hat{\lambda}^2}{m}$. The CI was calculated as $\exp\!\lrbr{\log(\hat{\lambda}) \mp z_{\alpha/2} * \se(\hat{\lambda}) }$.
+
+Both methods yield similar estimates for $\lambda$ with small confidence intervals. However, the E-M algorithm confidence interval was narrower.
+
+
+
+
+
+
+
+
+
+
+
+
+
